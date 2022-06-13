@@ -19,7 +19,7 @@ from codecarbon.core.emissions import Emissions
 from codecarbon.core.units import Energy, Power, Time
 from codecarbon.core.util import count_cpus, suppress
 from codecarbon.external.geography import CloudMetadata, GeoMetadata
-from codecarbon.external.hardware import CPU, GPU, RAM
+from codecarbon.external.hardware import CPU, GPU, MODE_CPU_LOAD, RAM
 from codecarbon.external.logger import logger, set_logger_format, set_logger_level
 from codecarbon.external.scheduler import PeriodicScheduler
 from codecarbon.input import DataSource
@@ -277,23 +277,40 @@ class BaseEmissionsTracker(ABC):
             self._hardware.append(hardware)
             self._conf["cpu_model"] = hardware.get_model()
         else:
-            logger.warning(
-                "No CPU tracking mode found. Falling back on CPU constant mode."
-            )
             tdp = cpu.TDP()
             power = tdp.tdp
             model = tdp.model
-            logger.info(f"CPU Model on constant consumption mode: {model}")
             self._conf["cpu_model"] = model
             if tdp:
-                hardware = CPU.from_utils(self._output_dir, "constant", model, power)
+                if cpu.is_psutil_available():
+                    logger.warning(
+                        "No CPU tracking mode found. Falling back on CPU load mode."
+                    )
+                    hardware = CPU.from_utils(
+                        self._output_dir, MODE_CPU_LOAD, model, power
+                    )
+                else:
+                    logger.warning(
+                        "No CPU tracking mode found. Falling back on CPU constant mode."
+                    )
+                    hardware = CPU.from_utils(
+                        self._output_dir, "constant", model, power
+                    )
                 self._hardware.append(hardware)
             else:
-                logger.warning(
-                    "Failed to match CPU TDP constant. "
-                    + "Falling back on a global constant."
-                )
-                hardware = CPU.from_utils(self._output_dir, "constant")
+
+                if cpu.is_psutil_available():
+                    logger.warning(
+                        "Failed to match CPU TDP constant. Falling back on CPU load mode."
+                    )
+                    hardware = CPU.from_utils(
+                        self._output_dir, MODE_CPU_LOAD, model, power
+                    )
+                else:
+                    logger.warning(
+                        "Failed to match CPU TDP constant. Falling back on a global constant."
+                    )
+                    hardware = CPU.from_utils(self._output_dir, "constant")
                 self._hardware.append(hardware)
 
         self._conf["hardware"] = list(map(lambda x: x.description(), self._hardware))
