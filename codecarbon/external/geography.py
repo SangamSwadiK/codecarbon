@@ -81,7 +81,7 @@ class GeoMetadata:
     def from_geo_js(cls, url: str) -> "GeoMetadata":
         try:
             response: Dict = requests.get(url, timeout=0.5).json()
-        except requests.exceptions.Timeout:
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
             # If there is a timeout, we default to Canada
             logger.info(
                 "Unable to access geographical location. \
