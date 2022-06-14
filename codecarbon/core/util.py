@@ -78,7 +78,7 @@ def detect_cpu_model() -> str:
 
 def count_cpus() -> int:
     if os.environ.get("SLURM_JOB_ID") is None:
-        return psutil.cpu_count()
+        return psutil.cpu_count(logical=False)
 
     try:
         scontrol = subprocess.check_output(
@@ -89,7 +89,7 @@ def count_cpus() -> int:
             "Error running `scontrol show job $SLURM_JOBID` "
             + "to count SLURM-available cpus. Using the machine's cpu count."
         )
-        return psutil.cpu_count()
+        return psutil.cpu_count(logical=False)
 
     num_cpus_matches = re.findall(r"NumCPUs=\d+", scontrol)
 
@@ -98,14 +98,14 @@ def count_cpus() -> int:
             "Could not find NumCPUs= after running `scontrol show job $SLURM_JOBID` "
             + "to count SLURM-available cpus. Using the machine's cpu count."
         )
-        return psutil.cpu_count()
+        return psutil.cpu_count(logical=False)
 
     if len(num_cpus_matches) > 1:
         logger.warning(
             "Unexpected output after running `scontrol show job $SLURM_JOBID` "
             + "to count SLURM-available cpus. Using the machine's cpu count."
         )
-        return psutil.cpu_count()
+        return psutil.cpu_count(logical=False)
 
     num_cpus = num_cpus_matches[0].replace("NumCPUs=", "")
     return int(num_cpus)
