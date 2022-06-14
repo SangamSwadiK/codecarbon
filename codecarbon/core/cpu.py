@@ -229,6 +229,9 @@ class IntelRAPL:
                         + " Please view https://github.com/mlco2/codecarbon/issues/244"
                         + f" for workarounds : {e}"
                     )
+                    raise PermissionError(
+                        "Unable to read Intel RAPL files for CPU power"
+                    )
         return
 
     def get_cpu_details(self, duration: Time, **kwargs) -> Dict:
